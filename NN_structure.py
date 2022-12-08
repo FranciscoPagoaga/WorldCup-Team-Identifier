@@ -2,6 +2,7 @@
 from torch import nn
 import torch.nn.functional as F
 
+
 class model_teamClassifer(nn.Module):
     def __init__(self, ratio_width=733, ratio_height=565, out=32):
         super(model_teamClassifer, self).__init__()
@@ -22,6 +23,42 @@ class model_teamClassifer(nn.Module):
         self.linear3 = nn.Linear(256, 128)
         self.linear4 = nn.Linear(128, self.out)
 
-        #droput
+        # droput
         self.dropout = nn.Dropout(p=0.1)
-        
+
+        # max_pooling
+        self.pool = nn.MaxPool2d(2, 2)
+
+        # Bacth Normalization (conv)
+        self.norm1 = nn.BatchNorm2d(16)
+        self.norm2 = nn.BatchNorm2d(32)
+        self.norm3 = nn.BatchNorm2d(64)
+        self.norm4 = nn.BatchNorm2d(128)
+        self.norm5 = nn.BatchNorm2d(256)
+        self.norm6 = nn.BatchNorm2d(512)
+        # Batch normalization (linear)
+        self.norm_fc1 = nn.BatchNorm1d(768)
+        self.norm_fc2 = nn.BatchNorm1d(256)
+        self.norm_fc3 = nn.BatchNorm1d(128)
+
+        def drop_last_layer(self, new_out):
+            self.out = new_out
+            self.fc4 = nn.Linear(128, self.out)
+
+        def forward(self, x):
+            # convolutional layers with ReLU and pooling
+            x = self.pool(F.relu(self.norm1(self.conv1(x))))
+            x = self.pool(F.relu(self.norm2(self.conv2(x))))
+            x = self.pool(F.relu(self.norm3(self.conv3(x))))
+            x = self.pool(F.relu(self.norm4(self.conv4(x))))
+            x = self.pool(F.relu(self.norm5(self.conv5(x))))
+            x = self.pool(F.relu(self.norm6(self.conv6(x))))
+            # flattening the image
+            x = x.view(-1,  512*self.ratio_width*self.ratio_height)
+            # linear layers
+            x = self.dropout(F.relu(self.norm_fc1(self.fc1(x))))
+            x = self.dropout(F.relu(self.norm_fc2(self.fc2(x))))
+            x = self.dropout(F.relu(self.norm_fc3(self.fc3(x))))
+            x = self.fc4(x)
+
+            return x

@@ -37,13 +37,13 @@ class model_teamClassifer(nn.Module):
         self.norm5 = nn.BatchNorm2d(256)
         self.norm6 = nn.BatchNorm2d(512)
         # Batch normalization (linear)
-        self.norm_fc1 = nn.BatchNorm1d(768)
-        self.norm_fc2 = nn.BatchNorm1d(256)
-        self.norm_fc3 = nn.BatchNorm1d(128)
+        self.norm_linear1 = nn.BatchNorm1d(768)
+        self.norm_linear2 = nn.BatchNorm1d(256)
+        self.norm_linear3 = nn.BatchNorm1d(128)
 
         def drop_last_layer(self, new_out):
             self.out = new_out
-            self.fc4 = nn.Linear(128, self.out)
+            self.linear4 = nn.Linear(128, self.out)
 
         def forward(self, x):
             # convolutional layers with ReLU and pooling

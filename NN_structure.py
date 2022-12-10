@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class model_teamClassifer(nn.Module):
-    def __init__(self, ratio_width=733, ratio_height=565, out=32):
+    def __init__(self, ratio_width=4, ratio_height=4, out=32):
         super(model_teamClassifer, self).__init__()
         self.ratio_height = ratio_height
         self.ratio_width = ratio_width
@@ -41,24 +41,25 @@ class model_teamClassifer(nn.Module):
         self.norm_linear2 = nn.BatchNorm1d(256)
         self.norm_linear3 = nn.BatchNorm1d(128)
 
-        def drop_last_layer(self, new_out):
-            self.out = new_out
-            self.linear4 = nn.Linear(128, self.out)
+    def drop_last_layer(self, new_out):
+        self.out = new_out
+        self.linear4 = nn.Linear(128, self.out)
 
-        def forward(self, x):
-            # convolutional layers with ReLU and pooling
-            x = self.pool(F.relu(self.norm1(self.conv1(x))))
-            x = self.pool(F.relu(self.norm2(self.conv2(x))))
-            x = self.pool(F.relu(self.norm3(self.conv3(x))))
-            x = self.pool(F.relu(self.norm4(self.conv4(x))))
-            x = self.pool(F.relu(self.norm5(self.conv5(x))))
-            x = self.pool(F.relu(self.norm6(self.conv6(x))))
-            # flattening the image
-            x = x.view(-1,  512*self.ratio_width*self.ratio_height)
-            # linear layers
-            x = self.dropout(F.relu(self.norm_fc1(self.fc1(x))))
-            x = self.dropout(F.relu(self.norm_fc2(self.fc2(x))))
-            x = self.dropout(F.relu(self.norm_fc3(self.fc3(x))))
-            x = self.fc4(x)
+    def forward(self, x):
+        # convolutional layers with ReLU and pooling
+        x = self.pool(F.relu(self.norm1(self.conv1(x))))
+        x = self.pool(F.relu(self.norm2(self.conv2(x))))
+        x = self.pool(F.relu(self.norm3(self.conv3(x))))
+        x = self.pool(F.relu(self.norm4(self.conv4(x))))
+        x = self.pool(F.relu(self.norm5(self.conv5(x))))
+        x = self.pool(F.relu(self.norm6(self.conv6(x))))
+        # flattening the image
 
-            return x
+        x = x.view(-1,  512*self.ratio_width*self.ratio_height)
+        # linear layers
+        x = self.dropout(F.relu(self.norm_linear1(self.linear1(x))))
+        x = self.dropout(F.relu(self.norm_linear2(self.linear2(x))))
+        x = self.dropout(F.relu(self.norm_linear3(self.linear3(x))))
+        x = self.linear4(x)
+
+        return x

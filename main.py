@@ -5,18 +5,16 @@ def main():
     img = cv2.imread('training_dataset/01200.jpg')
     hh, ww = img.shape[:2]
     img = grabCut(img)
-    
     #average height 565, average width 733
     cv2.imshow('window', img)
     # cv2.imshow('window', img)
 
     cv2.waitKey(0)
-
     cv2.destroyAllWindows()
 
 def resizeImg(sourceImg):
-    desired_width = 733
-    desired_height = 565
+    desired_width = 366
+    desired_height = 282
     dim = (desired_width, desired_height)
     resized_img = cv2.resize(sourceImg, dsize=dim, interpolation=cv2.INTER_AREA)
     return resized_img

@@ -15,16 +15,17 @@ def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     json_labels = json.load(open(in_labels, 'r'))
     trainset = EquiposDataset(
-        directory=in_images, labels=json_labels, size={733, 565})
+        directory=in_images, labels=json_labels)
 
     train_size = len(trainset)
     indexes = list(range(train_size))
 
-    batch_size = 8
+    batch_size = 12
+    minimum_validation_loss = np.inf
 
     train_index = indexes[int(np.floor(train_size*0.1)):]
     test_index = indexes[:int(np.floor(train_size*0.1))]
-    red = model_teamClassifer(ratio_height=733, ratio_width=565, out=32)
+    red = model_teamClassifer()
 
     if device == 'cuda':
         red = red.to(device='cuda')
@@ -36,37 +37,37 @@ def main():
     optimizer = torch.optim.SGD(params=red.parameters(), lr=0.09)
     train_sampler = SubsetRandomSampler(train_index)
     train_loader = torch.utils.data.DataLoader(
-        trainset, batch_size=batch_size, sampler=train_sampler, num_workers=0)
+        trainset, batch_size=8, shuffle=False, drop_last=True, num_workers = 0)
     validation_sampler = SubsetRandomSampler(test_index)
     validation_loader = torch.utils.data.DataLoader(
-        trainset, batch_size=batch_size, sampler=validation_sampler, num_workers=0)
+        trainset, batch_size=8, shuffle=False, drop_last=True, num_workers = 0)
     for epoch in range(1, epochs+1):
         suma_train_loss = 0
         suma_valid_loss = 0
 
         # training de la red
         red.train()
-        for batch_index, (data, target) in enumerate(train_loader):
+        for (data, target) in train_loader:
             optimizer.zero_grad()
-            if device == 'cuda':
-                data = data.cuda()
-                target = target.cuda()
-                output = red(data)
-                loss = criterion(output, target)
-                loss.backward()
-                optimizer.step()
-                suma_train_loss += loss.item()*data.size(0)
+            output = red(data)
+            loss = criterion(output, target)
+            loss.backward()
+            optimizer.step()
+            suma_train_loss += loss.item()*data.size(0)
+            data = None
+            target = None
+            output = None
 
         # validacion de la red
         red.eval()
-        for batch_index, (data, target) in enumerate(validation_loader):
-            if device == 'cuda':
-                data = data.cuda()
-                target = target.cuda()
+        for (data, target) in validation_loader:
 
             output = red(data)
             loss = criterion(output, target)
             suma_valid_loss += loss.item()*data.size(0)
+            data = None
+            target = None
+            output = None
 
         valid_loss = suma_valid_loss/(len(validation_loader)*batch_size)
         train_loss = suma_train_loss/(len(train_loader)*batch_size)
@@ -90,7 +91,7 @@ def main():
                 torch.save(red.state_dict(), out_classifier)
                 minimum_validation_loss = valid_loss
                 exit(0)
-    
+
     print("Return")
 
 

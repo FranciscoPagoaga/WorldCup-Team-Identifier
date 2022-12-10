@@ -9,46 +9,85 @@ import torchvision.transforms.functional as TF
 
 
 class EquiposDataset(Dataset):
-    def __init__(self, directory, labels, size, flip_chance=0.5, color_change_chance=0.10, gaussian_noise_chance=0.2, gaussian_noise_range=5.0, luminosity_changes_chance=0.125, transform=None):
+    def __init__(self, directory, labels, size=(733, 565)):
         self.directory = directory
         self.img_files = listdir(directory)
         self.labels = labels
-
-        self.transform = transform
         self.size = size
-        self.flip_chance = flip_chance
-        self.color_change_chance = color_change_chance
-        self.gaussian_noise_chance = gaussian_noise_chance
-        self.luminosity_changes_chance = luminosity_changes_chance
-        self.gaussian_noise_range = gaussian_noise_range
+        if self.labels != {}:
+            classes = []
+            for img in self.img_files:
+                class_final = f"{self.labels[img]['equipo']}"
+                self.labels[img]['class'] = class_final
+                classes.append(class_final)
+            self.classes = sorted(list(set(classes)))
 
     def __len__(self):
         return len(self.img_files)
 
-    def getItem(self, index):
+    def __getitem__(self, index):
         filename = self.img_files[index]
+        #aux_Image = cv2.imread(f"{self.directory}/{filename}")
         aux_Image = Image.open(f"{self.directory}/{filename}")
-        aux_Image = resizeImg(aux_Image)
+        aux_Image = self.resizeImg(aux_Image)
         image_Tensor = TF.to_tensor(aux_Image)
-        return image_Tensor
+        if self.labels != {}:
+            class_final = self.labels[filename]['equipo']
+            return image_Tensor, torch.tensor(self.classes.index(class_final))
+        else:
+            return image_Tensor, filename
 
+    def resizeImg(self, sourceImg):
+        # desired_width = 366
+        # desired_height = 282
+        # dim = (desired_width, desired_height)
+        # resized_img = cv2.resize(sourceImg, dsize=dim,
+        #                         interpolation=cv2.INTER_AREA)
 
-def resizeImg(sourceImg):
-    desired_width = 733
-    desired_height = 565
-    dim = (desired_width, desired_height)
-    resized_img = cv2.resize(sourceImg, dsize=dim,
-                             interpolation=cv2.INTER_AREA)
-    return resized_img
+        img_width, img_height = sourceImg.size
+        target_width, target_height = self.size
 
+        scale_w = target_width/img_width
+        scale_h = target_height/img_height
 
-def grabCut(img):
-    img = resizeImg(img)
-    mask = np.zeros(img.shape[:2], np.uint8)
-    bgdModel = np.zeros((1, 65), np.float64)
-    fgdModel = np.zeros((1, 65), np.float64)
-    rect = (50, 50, 733, 565)
-    cv2.grabCut(img, mask, rect, bgdModel, fgdModel, 5, cv2.GC_INIT_WITH_RECT)
-    mask2 = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
-    moddedImg = img*mask2[:, :, np.newaxis]
-    return moddedImg
+        factor = 0
+        if scale_h >= scale_w:
+            factor = scale_w
+            sourceImg = sourceImg.resize(
+                (target_width, int(sourceImg.height * factor)))
+            diff = (target_height - sourceImg.height)
+            padding_top = diff // 2
+            padding_bottom = diff - padding_top
+            sourceImg = self.padding(
+                sourceImg, padding_top, 0, padding_bottom, 0, (0, 0, 0))
+        else:
+            factor = scale_h
+            sourceImg = sourceImg.resize(
+                (int(sourceImg.width * factor), target_height))
+            diff = (target_width - sourceImg.width)
+            padding_right = diff // 2
+            padding_left = diff - padding_right
+            sourceImg = self.padding(
+                sourceImg, 0, padding_right, 0, padding_left, (0, 0, 0))
+
+        return sourceImg
+
+    def grabCut(self, img):
+        img = self.resizeImg(img)
+        mask = np.zeros(img.shape[:2], np.uint8)
+        bgdModel = np.zeros((1, 65), np.float64)
+        fgdModel = np.zeros((1, 65), np.float64)
+        rect = (50, 50, 733, 565)
+        cv2.grabCut(img, mask, rect, bgdModel,
+                    fgdModel, 5, cv2.GC_INIT_WITH_RECT)
+        mask2 = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
+        moddedImg = img*mask2[:, :, np.newaxis]
+        return moddedImg
+
+    def padding(self, pil_img, top, right, bottom, left, color):
+        width, height = pil_img.size
+        new_width = width + right + left
+        new_height = height + top + bottom
+        result = Image.new(pil_img.mode, (new_width, new_height), color)
+        result.paste(pil_img, (left, top))
+        return result

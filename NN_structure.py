@@ -18,7 +18,7 @@ class model_teamClassifer(nn.Module):
         self.conv6 = nn.Conv2d(256, 512, kernel_size=3, padding=1)
 
         # linear layers
-        self.linear1 = nn.Linear(512*self.ratio_width*self.ratio_height, 768)
+        self.linear1 = nn.Linear(512*self.ratio_width*self.ratio_height*4, 768)
         self.linear2 = nn.Linear(768, 256)
         self.linear3 = nn.Linear(256, 128)
         self.linear4 = nn.Linear(128, self.out)
@@ -55,7 +55,7 @@ class model_teamClassifer(nn.Module):
         x = self.pool(F.relu(self.norm6(self.conv6(x))))
         # flattening the image
 
-        x = x.view(-1,  512*self.ratio_width*self.ratio_height)
+        x = x.view(8, 512*self.ratio_height*self.ratio_width*4)
         # linear layers
         x = self.dropout(F.relu(self.norm_linear1(self.linear1(x))))
         x = self.dropout(F.relu(self.norm_linear2(self.linear2(x))))

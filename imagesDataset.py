@@ -9,11 +9,12 @@ import torchvision.transforms.functional as TF
 
 
 class EquiposDataset(Dataset):
-    def __init__(self, directory, labels, size=(733, 565)):
+    def __init__(self, directory, labels, size=(512, 512)):
         self.directory = directory
         self.img_files = listdir(directory)
         self.labels = labels
         self.size = size
+
         if self.labels != {}:
             classes = []
             for img in self.img_files:
@@ -33,42 +34,16 @@ class EquiposDataset(Dataset):
         image_Tensor = TF.to_tensor(aux_Image)
         if self.labels != {}:
             class_final = self.labels[filename]['equipo']
-            return image_Tensor, torch.tensor(self.classes.index(class_final))
+            real_out = [0.0]*32
+            index = self.classes.index(class_final)
+            real_out[index] = 1.0
+            return image_Tensor, torch.tensor(real_out)
         else:
             return image_Tensor, filename
 
     def resizeImg(self, sourceImg):
-        # desired_width = 366
-        # desired_height = 282
-        # dim = (desired_width, desired_height)
-        # resized_img = cv2.resize(sourceImg, dsize=dim,
-        #                         interpolation=cv2.INTER_AREA)
+        sourceImg = sourceImg.resize(self.size)
 
-        img_width, img_height = sourceImg.size
-        target_width, target_height = self.size
-
-        scale_w = target_width/img_width
-        scale_h = target_height/img_height
-
-        factor = 0
-        if scale_h >= scale_w:
-            factor = scale_w
-            sourceImg = sourceImg.resize(
-                (target_width, int(sourceImg.height * factor)))
-            diff = (target_height - sourceImg.height)
-            padding_top = diff // 2
-            padding_bottom = diff - padding_top
-            sourceImg = self.padding(
-                sourceImg, padding_top, 0, padding_bottom, 0, (0, 0, 0))
-        else:
-            factor = scale_h
-            sourceImg = sourceImg.resize(
-                (int(sourceImg.width * factor), target_height))
-            diff = (target_width - sourceImg.width)
-            padding_right = diff // 2
-            padding_left = diff - padding_right
-            sourceImg = self.padding(
-                sourceImg, 0, padding_right, 0, padding_left, (0, 0, 0))
 
         return sourceImg
 

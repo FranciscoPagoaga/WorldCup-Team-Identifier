@@ -26,7 +26,6 @@ def main():
     train_index = indexes[int(np.floor(train_size*0.1)):]
     test_index = indexes[:int(np.floor(train_size*0.1))]
     red = model_teamClassifer()
-
     if device == 'cuda':
         red = red.to(device='cuda')
         print("USANDO CUDA")
@@ -37,31 +36,35 @@ def main():
     optimizer = torch.optim.SGD(params=red.parameters(), lr=0.09)
     train_sampler = SubsetRandomSampler(train_index)
     train_loader = torch.utils.data.DataLoader(
-        trainset, batch_size=8, shuffle=False, drop_last=True, num_workers = 0)
+        trainset, batch_size=8, drop_last=True, num_workers=0, sampler=train_sampler)
     validation_sampler = SubsetRandomSampler(test_index)
     validation_loader = torch.utils.data.DataLoader(
-        trainset, batch_size=8, shuffle=False, drop_last=True, num_workers = 0)
+        trainset, batch_size=8, shuffle=False, drop_last=True, num_workers=0)
     for epoch in range(1, epochs+1):
         suma_train_loss = 0
         suma_valid_loss = 0
 
         # training de la red
         red.train()
+        elemento = 1
         for (data, target) in train_loader:
+            print(target[0])
             optimizer.zero_grad()
             output = red(data)
             loss = criterion(output, target)
             loss.backward()
             optimizer.step()
             suma_train_loss += loss.item()*data.size(0)
+            print(f"Aprendiendo de elemento {elemento}")
             data = None
             target = None
             output = None
 
         # validacion de la red
+        print("="*100)
+        print(f"Entrenamiento epoca {epoch} finalizado, comenzando validacion")
         red.eval()
         for (data, target) in validation_loader:
-
             output = red(data)
             loss = criterion(output, target)
             suma_valid_loss += loss.item()*data.size(0)
